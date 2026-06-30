@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Full Campaign Flow - papernest</title>
+<style>
+:root {
+  --pp: #5A52FF; --pp-l: #ECEAFF; --pp-d: #3D36CC;
+  --gr: #0FC4B2; --gr-l: #E7F9F7;
+  --ye: #FFB81D; --ye-l: #FFF7E8;
+  --pk: #FD6C93; --pk-l: #FFF0F4;
+  --bl: #4C89FF; --bl-l: #DBE7FF;
+  --n1: #F7F7F9; --n2: #EEEFF2; --n4: #B0B3C0; --n6: #63697F; --n9: #111827;
+  --wh: #FFFFFF;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',-apple-system,sans-serif;background:var(--n1);color:var(--n9);font-size:14px;line-height:1.6}
+
+.hdr{background:var(--pp);padding:24px 28px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:200}
+.hdr-logo{width:36px;height:36px;flex-shrink:0}
+.hdr-text{color:#fff}
+.hdr-title{font-size:18px;font-weight:800;letter-spacing:-.3px}
+.hdr-sub{font-size:12px;color:rgba(255,255,255,.65);margin-top:1px}
+
+.phase-bar{display:flex;background:var(--wh);border-bottom:1px solid var(--n2);position:sticky;top:84px;z-index:190;overflow-x:auto}
+.phase-tab{flex:1;min-width:140px;padding:14px 12px;text-align:center;cursor:pointer;border-bottom:3px solid transparent;transition:all .15s;font-family:inherit}
+.phase-tab:hover{background:var(--n1)}
+.phase-tab.on{border-bottom-color:var(--pp);background:var(--pp-l)}
+.phase-num{font-size:10px;font-weight:700;color:var(--n4);text-transform:uppercase;letter-spacing:.4px}
+.phase-tab.on .phase-num{color:var(--pp)}
+.phase-name{font-size:13px;font-weight:700;color:var(--n9);margin-top:2px}
+
+.main{max-width:840px;margin:0 auto;padding:28px 24px 80px}
+.phase-panel{display:none}
+.phase-panel.on{display:block}
+
+.intro{font-size:14.5px;color:var(--n6);margin-bottom:24px;line-height:1.7}
+.intro strong{color:var(--n9)}
+
+.section{margin-bottom:28px}
+.section-title{font-size:16px;font-weight:800;color:var(--n9);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.section-title .n{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--pp);color:#fff;font-size:12px;font-weight:700;flex-shrink:0}
+
+.block{background:var(--wh);border-radius:14px;padding:20px 22px;margin-bottom:14px;border:1px solid var(--n2)}
+.block-title{font-size:14px;font-weight:700;color:var(--n9);margin-bottom:10px}
+.block-body{font-size:13.5px;color:var(--n6);line-height:1.65}
+.block-body b{color:var(--n9)}
+
+.criteria-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:14px 0}
+.criteria-item{background:var(--n1);border-radius:10px;padding:12px 14px;font-size:12.5px;color:var(--n9);display:flex;align-items:flex-start;gap:8px}
+.criteria-item .ic{flex-shrink:0;font-size:14px}
+
+/* Decision tree */
+.tree-q{background:var(--wh);border-radius:14px;border:2px solid var(--pp-l);padding:18px 20px;margin-bottom:12px}
+.tree-q-text{font-size:14.5px;font-weight:700;color:var(--n9);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.tree-q-num{width:24px;height:24px;border-radius:50%;background:var(--pp);color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.tree-branch{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tree-opt{border-radius:10px;padding:12px 14px;font-size:12.5px;line-height:1.5}
+.tree-opt-yes{background:var(--gr-l);border-left:3px solid var(--gr)}
+.tree-opt-no{background:var(--n1);border-left:3px solid var(--n4)}
+.tree-opt b{display:block;margin-bottom:3px;color:var(--n9);font-size:13px}
+.tree-opt span{color:var(--n6)}
+.tree-result{display:inline-block;margin-top:6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;border-radius:6px;padding:3px 8px}
+.r-exclusive{background:var(--pp);color:#fff}
+.r-newsjack{background:var(--bl);color:#fff}
+.r-mininews{background:var(--ye);color:var(--n9)}
+.r-blog{background:var(--gr);color:#fff}
+.r-stop{background:var(--n4);color:#fff}
+
+/* Strategy cards */
+.strategy-card{background:var(--wh);border-radius:16px;border:1px solid var(--n2);overflow:hidden;margin-bottom:18px}
+.strategy-hdr{padding:18px 22px;display:flex;align-items:center;gap:12px}
+.strategy-icon{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0}
+.strategy-name{font-size:16px;font-weight:800;color:var(--n9)}
+.strategy-tag{font-size:11px;font-weight:600;color:var(--n6)}
+.priority-badge{margin-left:auto;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;border-radius:6px;padding:3px 9px;flex-shrink:0}
+.p-high{background:var(--gr-l);color:#0a6b64}
+.p-low{background:var(--n2);color:var(--n6)}
+
+.strategy-body{padding:0 22px 20px}
+.when-box{background:var(--n1);border-radius:10px;padding:12px 14px;font-size:13px;color:var(--n9);margin-bottom:14px}
+.when-box b{color:var(--pp)}
+
+.phase-timeline{display:flex;flex-direction:column;gap:0}
+.tl-step{display:flex;gap:14px;padding:10px 0;position:relative}
+.tl-step:not(:last-child)::before{content:'';position:absolute;left:13px;top:34px;bottom:-6px;width:2px;background:var(--n2)}
+.tl-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;z-index:1}
+.tl-content{flex:1;padding-top:2px}
+.tl-content b{display:block;font-size:13.5px;color:var(--n9);margin-bottom:2px}
+.tl-content span{font-size:12.5px;color:var(--n6);line-height:1.5}
+
+.warning-box{display:flex;gap:8px;background:#FEF3F2;border-left:3px solid #DC2626;border-radius:8px;padding:11px 14px;margin-top:14px;font-size:12.5px;color:#991B1B}
+
+.example-box{display:flex;gap:8px;background:var(--bl-l);border-radius:8px;padding:11px 14px;margin-top:10px;font-size:12.5px;color:#1D5FCC}
+.example-box b{color:#1D5FCC}
+
+/* Cadence */
+.cadence-list{background:var(--wh);border-radius:14px;border:1px solid var(--n2);padding:6px 0}
+.cadence-item{display:flex;align-items:flex-start;gap:10px;padding:12px 20px;border-bottom:1px solid var(--n1)}
+.cadence-item:last-child{border-bottom:none}
+.cadence-icon{font-size:15px;flex-shrink:0;margin-top:1px}
+.cadence-text b{display:block;font-size:13px;color:var(--n9);margin-bottom:1px}
+.cadence-text span{font-size:12px;color:var(--n6)}
+
+/* Source sheets / DB links */
+.link-card{display:flex;align-items:center;gap:10px;background:var(--wh);border:1px solid var(--n2);border-radius:10px;padding:13px 16px;margin-bottom:10px;text-decoration:none;transition:all .12s}
+.link-card:hover{border-color:var(--pp);background:var(--pp-l)}
+.link-icon{font-size:17px;flex-shrink:0}
+.link-text{font-size:13px;color:var(--n9);font-weight:600}
+.link-text span{display:block;font-size:11.5px;color:var(--n6);font-weight:400;margin-top:1px}
+
+/* Quality filter */
+.filter-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}
+.filter-card{border-radius:12px;padding:16px 18px}
+.f-no{background:#FEF2F2}
+.f-yes{background:var(--gr-l)}
+.filter-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px}
+.f-no .filter-label{color:#991B1B}
+.f-yes .filter-label{color:#0a6b64}
+.filter-item{font-size:12.5px;color:var(--n9);margin-bottom:6px;display:flex;gap:6px}
+.filter-item:last-child{margin-bottom:0}
+
+.core-principle{background:linear-gradient(135deg,#5A52FF,#7B74FF);border-radius:14px;padding:22px 24px;color:#fff;margin-top:20px;text-align:center}
+.core-principle-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#D0CEFF;margin-bottom:8px}
+.core-principle-text{font-size:16px;font-weight:700;line-height:1.4}
+
+.tool-table{width:100%;border-collapse:collapse;background:var(--wh);border-radius:12px;overflow:hidden;border:1px solid var(--n2)}
+.tool-table th{background:var(--n1);padding:10px 14px;text-align:left;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--n6)}
+.tool-table td{padding:11px 14px;font-size:12.5px;color:var(--n9);border-top:1px solid var(--n1)}
+
+@media(max-width:640px){
+  .criteria-grid,.tree-branch,.filter-grid{grid-template-columns:1fr}
+  .main{padding:20px 16px}
+}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <svg class="hdr-logo" viewBox="0 0 302 302" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect width="302" height="302" rx="151" fill="white" opacity="0.15"/>
+    <path d="M161.506 57.0209C128.584 57.0209 101.472 82.6075 99.2588 115.524C99.2588 116.216 99.2588 117.046 99.2588 117.737V231.84C99.2588 239.17 105.069 244.979 112.4 244.979C119.731 244.979 125.541 239.17 125.541 231.84V119.95C125.541 99.4809 142.417 83.299 162.198 83.299C181.978 83.299 198.854 100.172 198.854 119.95C198.854 139.728 181.978 156.463 162.198 156.463C154.866 156.463 149.056 162.272 149.056 169.602C149.056 176.932 154.866 182.741 162.198 182.741C195.811 182.741 225.136 154.25 225.136 119.812C225.136 85.3736 195.119 57.0209 161.506 57.0209Z" fill="white"/>
+  </svg>
+  <div class="hdr-text">
+    <div class="hdr-title">The full PR campaign flow</div>
+    <div class="hdr-sub">From spotting an idea to a published, tracked backlink</div>
+  </div>
+</div>
+
+<div class="phase-bar" id="phase-bar"></div>
+
+<div class="main">
+  <div id="phase-content"></div>
+</div>
+
+<script>
+const PHASES = [
+  { id: "idea", label: "Find an idea" },
+  { id: "report", label: "Write the report" },
+  { id: "journalists", label: "Find journalists" },
+  { id: "outreach", label: "Send and follow up" }
+];
+
+let activePhase = "idea";
+
+function renderPhaseBar() {
+  const bar = document.getElementById("phase-bar");
+  bar.innerHTML = PHASES.map((p, i) =>
+    `<div class="phase-tab ${p.id===activePhase?'on':''}" onclick="setPhase('${p.id}')">
+      <div class="phase-num">Phase ${i+1}</div>
+      <div class="phase-name">${p.label}</div>
+    </div>`
+  ).join("");
+}
+
+function setPhase(id) {
+  activePhase = id;
+  renderPhaseBar();
+  document.querySelectorAll(".phase-panel").forEach(p => p.classList.toggle("on", p.id === "panel-" + id));
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+renderPhaseBar();
+</script>
+
+<!-- ════════════════════════════════════════ -->
+<!-- PHASE 1: FIND AN IDEA -->
+<!-- ════════════════════════════════════════ -->
+<div class="phase-panel on" id="panel-idea">
+  <div class="intro">Every good campaign starts here. A strong idea isn't just "an interesting fact" - it has to clear a few bars before it's worth your time. <strong>This phase decides whether everything downstream is easy or a struggle.</strong></div>
+
+  <div class="section">
+    <div class="section-title"><span class="n">1</span>What makes an idea worth pursuing</div>
+    <div class="criteria-grid">
+      <div class="criteria-item"><span class="ic">&#128172;</span><span>There's already journalist demand - the topic is being discussed</span></div>
+      <div class="criteria-item"><span class="ic">&#128202;</span><span>We can calculate something new - a unique number not widely available</span></div>
+      <div class="criteria-item"><span class="ic">&#127919;</span><span>Backed by official sources we can rely on</span></div>
+      <div class="criteria-item"><span class="ic">&#9201;&#65039;</span><span>Good timing - the moment maximizes impact</span></div>
+      <div class="criteria-item"><span class="ic">&#128176;</span><span>Has economic impact - energy journalists are usually economy journalists too</span></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="n">2</span>Where to find ideas</div>
+
+    <div class="block">
+      <div class="block-title">&#128214; The Whale calendar (Trello)</div>
+      <div class="block-body">Review the Whale Project's Trello board. Some ideas there are too technical for a standard Whale article but can be reshaped into a PR angle - they may need real calculation time and are worth more as Digital PR than as a quick article.</div>
+    </div>
+
+    <div class="block">
+      <div class="block-title">&#129504; LLM and Google validation</div>
+      <div class="block-body">Ask an LLM about domestic consumption patterns, trends, or lifestyle ideas related to energy. Then validate with a direct Google search - "is it true that...?" - to confirm the claim is accurate and genuinely newsworthy before building anything on top of it.</div>
+    </div>
+
+    <div class="block">
+      <div class="block-title">&#128202; Dedicated sources sheet</div>
+      <div class="block-body">Keep a maintained sheet of official data sources: who publishes what, and how often they update. This is what lets you move fast when an idea needs a number today, not next week.</div>
+      <a class="link-card" href="https://docs.google.com/spreadsheets/d/1ifk5Whd9pKQAD9G1t46dGTqcaK6UE6_vvVWmLWRRieg/edit?usp=sharing" target="_blank" style="margin-top:10px">
+        <span class="link-icon">&#128202;</span>
+        <span class="link-text">Sources to extract data for reports <span>Google Sheet</span></span>
+      </a>
+    </div>
+
+    <div class="block">
+      <div class="block-title">&#128276; Google Alerts and media monitoring</div>
+      <div class="block-body">Set alerts for key brands and topics (Selectra, Hellowatt, regulatory bodies). Track when they appear in major newspapers to spot ideas worth leveraging or adapting before they go cold.</div>
+      <a class="link-card" href="https://www.google.es/alerts" target="_blank" style="margin-top:10px">
+        <span class="link-icon">&#128276;</span>
+        <span class="link-text">Google Alerts <span>google.es/alerts</span></span>
+      </a>
+    </div>
+
+    <div class="block">
+      <div class="block-title">&#127780;&#65039; Trending topics and seasonality</div>
+      <div class="block-body">Align ideas with the season:</div>
+      <div class="criteria-grid" style="margin-top:10px">
+        <div class="criteria-item"><span class="ic">&#10052;&#65039;</span><span><b>Winter</b> &#8594; heaters, electricity peaks</span></div>
+        <div class="criteria-item"><span class="ic">&#9728;&#65039;</span><span><b>Summer</b> &#8594; air conditioners, cooling demand</span></div>
+        <div class="criteria-item"><span class="ic">&#127962;&#65039;</span><span><b>Tourism season</b> &#8594; hotel and short-term rental energy use</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════ -->
+<!-- PHASE 2: WRITE THE REPORT -->
+<!-- ════════════════════════════════════════ -->
+<div class="phase-panel" id="panel-report">
+  <div class="intro">Once you have an idea worth pursuing, the report turns raw data into something a journalist can act on in minutes, not hours.</div>
+
+  <div class="phase-timeline">
+    <div class="tl-step">
+      <div class="tl-dot" style="background:var(--pp)">1</div>
+      <div class="tl-content"><b>Choose the topic</b><span>Current, useful, underexplored. Use Statista, Google News, IDAE/OCU/Eurostat/MITECO/REE for inspiration and validation.</span></div>
+    </div>
+    <div class="tl-step">
+      <div class="tl-dot" style="background:var(--gr)">2</div>
+      <div class="tl-content"><b>Gather your sources</b><span>Official statistics (kWh, CO2, euros), behavioral data, media context, studies - keep it digestible.</span></div>
+    </div>
+    <div class="tl-step">
+      <div class="tl-dot" style="background:var(--ye)">3</div>
+      <div class="tl-content"><b>Draft with GPT</b><span>Brief it with your sources and goals. Iterate with follow-ups: "make this more quotable", "add a real-world comparison", "explain your assumptions". Treat the first draft as a base, not a final version.</span></div>
+    </div>
+    <div class="tl-step">
+      <div class="tl-dot" style="background:var(--pk)">4</div>
+      <div class="tl-content"><b>Add visuals and branding</b><span>papernest brand style on headers, Flourish for charts, Canva for infographics and quote blocks.</span></div>
+    </div>
+  </div>
+
+  <div class="section" style="margin-top:24px">
+    <div class="section-title"><span class="n">&#10003;</span>Quality bar before moving to phase 3</div>
+    <div class="block">
+      <div class="block-body">A report is ready when its top 3 findings could each become a headline for three different outlets on their own. If you need three extra sentences of context before a number means anything, go back and sharpen the angle - see the <b>Data Storytelling</b> training for the full method.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════ -->
+<!-- PHASE 3: FIND JOURNALISTS -->
+<!-- ════════════════════════════════════════ -->
+<div class="phase-panel" id="panel-journalists">
+  <div class="intro">The right journalist for the wrong report gets ignored. The right report to the wrong journalist also gets ignored. This phase is about matching the two precisely.</div>
+
+  <div class="section">
+    <div class="section-title"><span class="n">1</span>Selection criteria</div>
+    <div class="criteria-grid">
+      <div class="criteria-item"><span class="ic">&#9989;</span><span>They've written about energy, sustainability, housing, climate, or consumer behavior</span></div>
+      <div class="criteria-item"><span class="ic">&#127970;</span><span>They work at a credible media outlet</span></div>
+      <div class="criteria-item"><span class="ic">&#127919;</span><span>Their tone and style align with our report - data-friendly, analytical</span></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="n">2</span>Method A - Google News</div>
+    <div class="phase-timeline">
+      <div class="tl-step"><div class="tl-dot" style="background:var(--pp)">1</div><div class="tl-content"><b>Go to Google News</b><span>news.google.com</span></div></div>
+      <div class="tl-step"><div class="tl-dot" style="background:var(--pp)">2</div><div class="tl-content"><b>Search a keyword related to your topic</b><span>"energy consumption", "airfryer vs oven", "household energy savings"</span></div></div>
+      <div class="tl-step"><div class="tl-dot" style="background:var(--pp)">3</div><div class="tl-content"><b>Click into relevant articles</b><span>Identify the author / journalist's name</span></div></div>
+      <div class="tl-step"><div class="tl-dot" style="background:var(--pp)">4</div><div class="tl-content"><b>Find their email</b><span>Check the article or site's "About"/"Contact" first. If not there, search LinkedIn (name + outlet, usually energy/economics)</span></div></div>
+      <div class="tl-step"><div class="tl-dot" style="background:var(--pp)">5</div><div class="tl-content"><b>Extract or verify the email</b><span>Lusha extension first &#8594; if not found, RocketReach using the LinkedIn URL &#8594; if still nothing, predict the alias and confirm with Verifalia + Email Checker</span></div></div>
+    </div>
+    <div class="example-box"><b>If always signed by "the editorial team":</b>&nbsp;search the outlet on LinkedIn for the energy/economics lead and repeat step 4-5 with that profile. For small outlets, use the general "Contact" editorial email; for big ones, search "[outlet.com] redaction email economy".</div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="n">3</span>Method B - Ahrefs Content Explorer</div>
+    <div class="phase-timeline">
+      <div class="tl-step"><div class="tl-dot" style="background:var(--gr)">1</div><div class="tl-content"><b>Open Content Explorer</b><span>In the Ahrefs header</span></div></div>
+      <div class="tl-step"><div class="tl-dot" style="background:var(--gr)">2</div><div class="tl-content"><b>Enter the main keyword</b><span>E.g. "price of electricity"</span></div></div>
+      <div class="tl-step"><div class="tl-dot" style="background:var(--gr)">3</div><div class="tl-content"><b>Apply filters</b><span>In title (not "everywhere") &#183; Page type: News &#183; Published: last 12 months &#183; Live pages only &#183; DR &gt;50 &#183; Has author (critical)</span></div></div>
+      <div class="tl-step"><div class="tl-dot" style="background:var(--gr)">4</div><div class="tl-content"><b>One page per domain</b><span>Use the filter above the results banner for more variety of outlets</span></div></div>
+      <div class="tl-step"><div class="tl-dot" style="background:var(--gr)">5</div><div class="tl-content"><b>Search each journalist's name directly in Google</b><span>Then repeat the email-finding steps from Method A</span></div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="n">4</span>Register the contact</div>
+    <div class="block-body" style="margin-bottom:10px">Create a new tab in the Journalist DB named after the report you're working on, then fill each row with the contact's full details before you reach out.</div>
+    <a class="link-card" href="https://docs.google.com/spreadsheets/d/1_XpuCtmgRk4DuUhLCYRwu_lOSBwURkNeaW6ghOEFT4I/edit?gid=0#gid=0" target="_blank">
+      <span class="link-icon">&#128221;</span>
+      <span class="link-text">DB Contacts of Journalists <span>Google Sheet</span></span>
+    </a>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════ -->
+<!-- PHASE 4: SEND AND FOLLOW UP -->
+<!-- ════════════════════════════════════════ -->
+<div class="phase-panel" id="panel-outreach">
+  <div class="intro">This is where most onboarding material used to stop at one single strategy. In reality there are <strong>several execution modes</strong>, and picking the right one for the situation matters more than any single email template.</div>
+
+  <div class="section">
+    <div class="section-title"><span class="n">&#127919;</span>Step 1 - Decide what you're dealing with</div>
+    <div class="block-body" style="margin-bottom:16px">Answer these in order. The first "yes" you hit gives you your execution mode.</div>
+
+    <div class="tree-q">
+      <div class="tree-q-text"><span class="tree-q-num">1</span>Is there external news happening right now? (a price published, a regulatory change, a geopolitical event moving energy prices)</div>
+      <div class="tree-branch">
+        <div class="tree-opt tree-opt-yes"><b>Yes</b><span>Go to question 2 to pick which kind of reactive content.</span></div>
+        <div class="tree-opt tree-opt-no"><b>No</b><span>Skip to question 3.</span></div>
+      </div>
+    </div>
+
+    <div class="tree-q">
+      <div class="tree-q-text"><span class="tree-q-num">2</span>Are you generating your own number or calculation from that event, or just adding a comment to coverage that already exists?</div>
+      <div class="tree-branch">
+        <div class="tree-opt tree-opt-yes"><b>I'm calculating something new</b><span>You're the one producing the insight - what it costs a household, what it means in practice.<div class="tree-result r-newsjack">Newsjacking</div></span></div>
+        <div class="tree-opt tree-opt-no"><b>Others already published it</b><span>You're adding a comment or extra data point to existing coverage.<div class="tree-result r-mininews">Mini-newsjacking</div><div class="warning-box" style="margin-top:8px">Not a current priority - we're focused on the bigger models for now.</div></span></div>
+      </div>
+    </div>
+
+    <div class="tree-q">
+      <div class="tree-q-text"><span class="tree-q-num">3</span>Do we have unique data - a number, ranking, or study nobody else has?</div>
+      <div class="tree-branch">
+        <div class="tree-opt tree-opt-yes"><b>Yes, and it's strong</b><span>Worth being the first and only source.<div class="tree-result r-exclusive">Exclusive</div></span></div>
+        <div class="tree-opt tree-opt-no"><b>No clear unique angle</b><span>Go to question 4.</span></div>
+      </div>
+    </div>
+
+    <div class="tree-q">
+      <div class="tree-q-text"><span class="tree-q-num">4</span>Is there real urgency, or is this educational / evergreen content?</div>
+      <div class="tree-branch">
+        <div class="tree-opt tree-opt-no"><b>No urgency</b><span>Educational, SEO and authority focused.<div class="tree-result r-blog">Blog / evergreen</div></span></div>
+        <div class="tree-opt tree-opt-no"><b>No clear angle at all</b><span>If you can't answer "why does this matter today" in one sentence, it's not ready.<div class="tree-result r-stop">Do not launch yet</div></span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="n">&#128203;</span>Step 2 - Execution mode reference</div>
+
+    <!-- EXCLUSIVE -->
+    <div class="strategy-card">
+      <div class="strategy-hdr">
+        <div class="strategy-icon" style="background:var(--pp-l)">&#128081;</div>
+        <div><div class="strategy-name">Exclusive</div><div class="strategy-tag">Control the story - be the first and only source</div></div>
+        <div class="priority-badge p-high">High priority</div>
+      </div>
+      <div class="strategy-body">
+        <div class="when-box">Use when: <b>we have unique data, a ranking, or an original study</b> that nobody else has, with strong headline potential. No rush to be first to talk about the topic in general - we set the timing.</div>
+        <div class="phase-timeline">
+          <div class="tl-step"><div class="tl-dot" style="background:var(--pp)">1</div><div class="tl-content"><b>Teaser, not data</b><span>First contact is narrative and interest only - never reveal exact numbers yet. Keep asking interest, not giving the story away.</span></div></div>
+          <div class="tl-step"><div class="tl-dot" style="background:var(--pp)">2</div><div class="tl-content"><b>First batch - 15 to 20 contacts</b><span>One per journal, usually top-tier media (DR &gt; 70). Only those who respond get the full PDF + charts + executive summary.</span></div></div>
+          <div class="tl-step"><div class="tl-dot" style="background:var(--pp)">3</div><div class="tl-content"><b>If interested, hold the line</b><span>Stop outreach to others and wait to see if they want exclusivity - tell them about the study and offer to point to our site if they publish first.</span></div></div>
+          <div class="tl-step"><div class="tl-dot" style="background:var(--pp)">4</div><div class="tl-content"><b>Follow-up after 2-3 days</b><span>If no one answered, launch a new batch at mid-tier (DR 50-70) of 15-20 journalists - this is the cascade. Try another batch if needed.</span></div></div>
+          <div class="tl-step"><div class="tl-dot" style="background:var(--pp)">5</div><div class="tl-content"><b>If nobody publishes</b><span>Publish the study on our own domain and finish the process - the data still has SEO value even without press pickup.</span></div></div>
+        </div>
+        <div class="example-box"><b>Example:</b>&nbsp;an original study on renewable consumption by region, or a ranking of the cheapest gas tariffs - something genuinely ours first.</div>
+        <div class="warning-box">Never reveal the full dataset in the first contact. The exclusivity only works if there's still something to offer once they say yes.</div>
+      </div>
+    </div>
+
+    <!-- CASCADE NOTE -->
+    <div class="block" style="background:var(--ye-l);border-color:#FFE3A5">
+      <div class="block-title">&#128202; About the cascade ("waterfall")</div>
+      <div class="block-body">Cascade isn't a separate strategy - it's <b>how you execute Exclusive when the first tier doesn't bite</b>. You don't have to start at top-tier either: depending on the story, you can start the cascade at mid-tier and only escalate to top-tier if it gains traction, or start top and step down. The defining feature is moving progressively between tiers, not which tier you start at.</div>
+    </div>
+
+    <!-- NEWSJACKING -->
+    <div class="strategy-card">
+      <div class="strategy-hdr">
+        <div class="strategy-icon" style="background:var(--bl-l)">&#9889;</div>
+        <div><div class="strategy-name">Newsjacking</div><div class="strategy-tag">Speed - enter a news cycle that's already happening</div></div>
+        <div class="priority-badge p-high">High priority</div>
+      </div>
+      <div class="strategy-body">
+        <div class="when-box">Use when: <b>an external event is already public</b> (TUR, ARERA, gas price, regulatory change) and we can calculate our own number from it within hours.</div>
+        <div class="phase-timeline">
+          <div class="tl-step"><div class="tl-dot" style="background:var(--bl)">1</div><div class="tl-content"><b>Blog published FIRST - mandatory</b><span>No PDF, no exclusivity. The published page is what you link to.</span></div></div>
+          <div class="tl-step"><div class="tl-dot" style="background:var(--bl)">2</div><div class="tl-content"><b>2-3 key insights extracted</b><span>The number that matters to a household, stated plainly.</span></div></div>
+          <div class="tl-step"><div class="tl-dot" style="background:var(--bl)">3</div><div class="tl-content"><b>Email with 3-4 bullets and a link</b><span>No attachments. Journalist list of 20-40 contacts, sent within hours to 1-2 days of the event.</span></div></div>
+          <div class="tl-step"><div class="tl-dot" style="background:var(--bl)">4</div><div class="tl-content"><b>Follow-up only with new data</b><span>If the story develops further, update with something new - never "just checking in".</span></div></div>
+        </div>
+        <div class="example-box"><b>Example:</b>&nbsp;TUR price is published by the regulator - same day, we publish our own simulation of what it means for an average household's bill.</div>
+      </div>
+    </div>
+
+    <!-- MINI-NEWSJACKING -->
+    <div class="strategy-card">
+      <div class="strategy-hdr">
+        <div class="strategy-icon" style="background:var(--ye-l)">&#128172;</div>
+        <div><div class="strategy-name">Mini-newsjacking</div><div class="strategy-tag">Insert into a conversation others already started</div></div>
+        <div class="priority-badge p-low">Not a current priority</div>
+      </div>
+      <div class="strategy-body">
+        <div class="when-box">Use when: <b>the news is already covered by others</b> and we have a complementary data point to add - not our own original analysis.</div>
+        <div class="phase-timeline">
+          <div class="tl-step"><div class="tl-dot" style="background:var(--ye)">1</div><div class="tl-content"><b>Identify the add-on insight</b><span>A comparison or extra number that wasn't in the original coverage.</span></div></div>
+          <div class="tl-step"><div class="tl-dot" style="background:var(--ye)">2</div><div class="tl-content"><b>Quick blog or LinkedIn post</b><span>No heavy assets, no PDF.</span></div></div>
+          <div class="tl-step"><div class="tl-dot" style="background:var(--ye)">3</div><div class="tl-content"><b>Reach out only if asked</b><span>If a journalist who already covered the story asks for more, that's when you send.</span></div></div>
+        </div>
+        <div class="warning-box">Currently de-prioritized while the team focuses on the larger data models (PRVG, TRVE, AC reports). Know the pattern, but don't actively chase this one right now.</div>
+      </div>
+    </div>
+
+    <!-- BLOG/EVERGREEN -->
+    <div class="strategy-card">
+      <div class="strategy-hdr">
+        <div class="strategy-icon" style="background:var(--gr-l)">&#127793;</div>
+        <div><div class="strategy-name">Blog / evergreen</div><div class="strategy-tag">No urgency - authority and SEO, not press coverage</div></div>
+        <div class="priority-badge p-high">High priority</div>
+      </div>
+      <div class="strategy-body">
+        <div class="when-box">Use when: <b>content is useful but has no time pressure</b> - a guide, historical evolution, or simulation by consumption profile.</div>
+        <div class="block-body">Structured post with clear explanation and charts. No outreach required - distribute via our own domain, LinkedIn, and newsletter. The goal is branding and organic traffic, not a press hit.</div>
+        <div class="example-box"><b>Example:</b>&nbsp;"How to calculate your gas bill" or a historical chart of TUR/PVPC evolution over the years.</div>
+      </div>
+    </div>
+
+    <!-- BAROMETER -->
+    <div class="strategy-card">
+      <div class="strategy-hdr">
+        <div class="strategy-icon" style="background:var(--pk-l)">&#127777;&#65039;</div>
+        <div><div class="strategy-name">Barometer / tracker</div><div class="strategy-tag">A living data source, occasionally turned into a one-pager</div></div>
+        <div class="priority-badge p-high">High priority</div>
+      </div>
+      <div class="strategy-body">
+        <div class="when-box">Use when: <b>we maintain a recurring tracker</b> (like the Spain Energy Thermometer) and a fresh data point inside it becomes newsworthy on its own.</div>
+        <div class="block-body">The barometer itself isn't a campaign - it's the engine. When an update inside it produces something strong enough (a new high, a sharp month-over-month move), that single data point gets pulled out and treated as its own mini-Exclusive or Newsjacking moment, with a one-pager built specifically around it.</div>
+        <div class="example-box"><b>Example:</b>&nbsp;the energy thermometer updates monthly; the month PVPC hits a new yearly high, that becomes a standalone one-pager sent to a small batch of journalists.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="n">&#9202;</span>Cadence between sends</div>
+    <div class="cadence-list">
+      <div class="cadence-item"><span class="cadence-icon">&#128721;</span><div class="cadence-text"><b>Don't release deep reports back to back</b><span>It saturates papernest's image with journalists.</span></div></div>
+      <div class="cadence-item"><span class="cadence-icon">&#128197;</span><div class="cadence-text"><b>Minimum 2 weeks between major exclusives</b><span>Unless the second one is genuinely different and relevant.</span></div></div>
+      <div class="cadence-item"><span class="cadence-icon">&#9889;</span><div class="cadence-text"><b>Newsjacking is the exception</b><span>You can newsjack even inside that 2-week gap, since it's a different format - but don't follow it immediately with another deep report.</span></div></div>
+      <div class="cadence-item"><span class="cadence-icon">&#127919;</span><div class="cadence-text"><b>Every send needs a new or urgent angle</b><span>The goal is constant presence without ever looking like spam.</span></div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="n">&#10003;</span>Final quality filter, before you send anything</div>
+    <div class="filter-grid">
+      <div class="filter-card f-no">
+        <div class="filter-label">Do not send if</div>
+        <div class="filter-item">&#10060; No strong insight</div>
+        <div class="filter-item">&#10060; No news hook or urgency</div>
+        <div class="filter-item">&#10060; No clear, specific data point</div>
+        <div class="filter-item">&#10060; It's pure commentary with nothing new</div>
+      </div>
+      <div class="filter-card f-yes">
+        <div class="filter-label">Send only if</div>
+        <div class="filter-item">&#9989; There is data</div>
+        <div class="filter-item">&#9989; There is a news angle</div>
+        <div class="filter-item">&#9989; There is meaning - someone would care</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="n">&#9888;&#65039;</span>Outreach email basics, regardless of mode</div>
+    <table class="tool-table">
+      <tr><th>Do</th><th>Avoid</th></tr>
+      <tr><td>Tailor the hook to each journalist</td><td>A mass, identical email blast</td></tr>
+      <tr><td>2-3 key insights included directly in the email</td><td>Making them open an attachment just to find the story</td></tr>
+      <tr><td>Link included naturally in the text</td><td>Ever mentioning "backlinks" to a journalist</td></tr>
+      <tr><td>Mix of 20-40 named journalists + max 5-10 generic inboxes</td><td>Relying mostly on generic redaction emails</td></tr>
+    </table>
+  </div>
+
+  <div class="core-principle">
+    <div class="core-principle-label">Core principle</div>
+    <div class="core-principle-text">We don't publish content. We create energy intelligence moments.</div>
+  </div>
+</div>
+
+<script>
+// Ensure correct initial panel visibility (in case of reordering)
+document.querySelectorAll(".phase-panel").forEach(p => {
+  p.classList.toggle("on", p.id === "panel-" + activePhase);
+});
+</script>
+
+</body>
+</html>
